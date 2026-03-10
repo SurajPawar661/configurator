@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    drone_config_lib::run()
+    vector_configurator_lib::run()
 }
