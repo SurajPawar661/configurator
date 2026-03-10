@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "VectorGCS",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "identifier": "com.vector.gcs",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -37,7 +37,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://spawar.github.io/configurator/updates/{{target}}-{{arch}}.json"
+        "https://SurajPawar661.github.io/configurator/updates/{{target}}-{{arch}}.json"
       ],
       "dialog": false,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNDNTNCREU1NUIzNTc2RDAKUldUUWRqVmI1YjFUUEFSLzNURUowRmFWWWhuVVBucFQ4QjRsMmZRRmRob2VENThEY2E4TzhVcG8K"
