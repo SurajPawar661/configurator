@@ -1,0 +1,794 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* 
+  VECTOR GCS INDUSTRIAL - NEUTRAL ENGINEERING SYSTEM
+  Focus: Readability, Zero-Noise, High Efficiency
+*/
+
+:root {
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-panel-dark: #0a0a0a;
+  --border-main: #333333;
+  --border-focus: #444444;
+
+  /* Status Colors (Reserved for states only) */
+  --status-ok: #43a047;
+  --status-warn: #ffb300;
+  --status-err: #e53935;
+  --status-info: #2196f3;
+
+  --text-main: #e0e0e0;
+  --text-dim: #888888;
+  --text-bright: #ffffff;
+  --accent: #2196f3;
+  /* Industrial Blue */
+
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-data: 'JetBrains Mono', monospace;
+
+  --sidebar-w: 60px;
+  --diag-w: var(--diag-width, 280px);
+  --head-h: 32px;
+  --console-h: var(--console-height, 120px);
+}
+
+* {
+  box-sizing: border-box;
+  outline: none;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  line-height: 1.4;
+  height: 100vh;
+  overflow: hidden;
+  overflow-x: hidden;
+  /* Safety override */
+}
+
+body.resizing {
+  cursor: ew-resize;
+  /* Default, will be overridden by specific resizer if needed */
+  user-select: none;
+}
+
+/* 1. LAYOUT QUADRANTS (Strict Grid) */
+.app-viewport {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr) 2px var(--diag-w);
+  grid-template-rows: var(--head-h) 1fr;
+  height: 100vh;
+  width: 100%;
+  /* Use 100% instead of 100vw to prevent scrollbar-pushing overflow */
+  position: relative;
+  overflow: hidden;
+}
+
+.app-viewport.resizing {
+  user-select: none;
+}
+
+.app-viewport.disconnected {
+  grid-template-columns: 1fr;
+}
+
+.app-viewport.disconnected .flight-core {
+  grid-column: 1;
+}
+
+/* RESIZERS */
+.resizer-v {
+  grid-column: 3;
+  grid-row: 2;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.2s;
+  z-index: 10;
+}
+
+.resizer-v:hover,
+.app-viewport.resizing .resizer-v {
+  background: #444;
+}
+
+/* Horizontal resizer removed from grid, now inside console if needed or removed */
+.resizer-h {
+  display: none;
+}
+
+/* 2. TOP STATUS BAR (Utility Strip) */
+.status-bar {
+  grid-column: 1 / -1;
+  background: var(--bg-panel-dark);
+  border-bottom: 1px solid var(--border-main);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 24px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-data);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.status-item b {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+/* Indicators (Strict) */
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.dot.ok {
+  background: var(--status-ok);
+}
+
+.dot.err {
+  background: var(--status-err);
+}
+
+.dot.warn {
+  background: var(--status-warn);
+}
+
+/* 3. NAVIGATION (Minimalist) */
+.nav-panel {
+  grid-row: 2 / -1;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-main);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 5;
+  /* Lower than flight-core */
+}
+
+.nav-link {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.nav-link:hover {
+  background: #2a2a2a;
+  color: var(--text-main);
+}
+
+.nav-link.active {
+  color: var(--text-bright);
+  background: #333333;
+}
+
+/* 4. MAIN CORE (Industrial Arena) */
+.flight-core {
+  grid-column: 2;
+  grid-row: 2;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: visible;
+  /* Allow tooltips to bleed over sidebar/diag area */
+  position: relative;
+  z-index: 10;
+  /* Center column above right column for tooltips */
+}
+
+.arena-header {
+  height: 24px;
+  background: #1a1a1a;
+  border-bottom: 1px solid var(--border-main);
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hazard-stripe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: repeating-linear-gradient(45deg,
+      var(--status-err),
+      var(--status-err) 10px,
+      #000 10px,
+      #000 20px);
+  animation: slideStripes 2s linear infinite;
+}
+
+@keyframes slideStripes {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 40px 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.pulse {
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Orientation Viewport */
+.flight-arena {
+  flex: 1;
+  position: relative;
+  background: #000;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* HUD Overlay (No Glows) */
+.hud-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  padding: 20px;
+}
+
+/* 5. DIAGNOSTICS (Sticky Matrix) */
+.diag-panel {
+  grid-column: 4;
+  grid-row: 2;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-main);
+  overflow-y: auto;
+  height: calc(100vh - var(--head-h));
+  position: relative;
+  z-index: 5;
+  /* Diagnostic panel below center panel */
+}
+
+.diag-panel::-webkit-scrollbar {
+  width: 3px;
+}
+
+.diag-panel::-webkit-scrollbar-thumb {
+  background: #444;
+}
+
+.diag-head {
+  position: sticky;
+  top: 0;
+  background: #252525;
+  padding: 6px 12px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #aaa;
+  border-bottom: 1px solid var(--border-main);
+  z-index: 5;
+}
+
+.diag-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 12px;
+  font-family: var(--font-data);
+  font-size: 10px;
+  border-bottom: 1px solid #252525;
+}
+
+/* 6. CONSOLE OVERLAY (Floating) */
+.console {
+  position: absolute;
+  bottom: 0;
+  left: var(--sidebar-w);
+  right: calc(var(--diag-w) + 2px);
+  height: 250px;
+  background: rgba(5, 5, 5, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border-main);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.console.hidden {
+  transform: translateY(100%);
+}
+
+.console-ctrl {
+  height: 24px;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 8px;
+  color: #888;
+  border-bottom: 1px solid #222;
+}
+
+.console-body {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  font-family: var(--font-data);
+  font-size: 10px;
+  color: #ccc;
+}
+
+/* Toggle Trigger */
+.console-trigger {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 101;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.console-trigger.active {
+  bottom: 262px;
+}
+
+/* BUTTONS & INPUTS */
+.btn-ui {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #aaa;
+  padding: 4px 12px;
+  font-size: 9px;
+  cursor: pointer;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.btn-ui:hover:not(:disabled) {
+  background: #252525;
+  border-color: #444;
+  color: #eee;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.btn-ui:active:not(:disabled) {
+  background: #000;
+  transform: translateY(1px);
+}
+
+.btn-ui:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-ui.primary {
+  background: #1b5e20;
+  border-color: #2e7d32;
+  color: #fff;
+}
+
+.btn-ui.primary:hover {
+  background: #2e7d32;
+  border-color: #388e3c;
+  box-shadow: 0 0 15px rgba(46, 125, 50, 0.2);
+}
+
+.input-ui {
+  background: #0a0a0a;
+  border: 1px solid #2a2a2a;
+  color: #eee;
+  padding: 4px 8px;
+  font-family: var(--font-data);
+  font-size: 10px;
+  border-radius: 2px;
+  transition: border-color 0.2s;
+}
+
+.input-ui:focus {
+  border-color: var(--status-info);
+  background: #000;
+}
+
+select.input-ui {
+  cursor: pointer;
+  padding-right: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  appearance: none;
+}
+
+/* Telemetry Large Values */
+.telemetry-val {
+  font-family: var(--font-data);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+/* 7. MODALS (Industrial Glass) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  width: 100%;
+  max-width: 450px;
+  animation: modalSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-content.error {
+  border-top: 3px solid var(--status-err);
+}
+
+.modal-content.warning {
+  border-top: 3px solid var(--status-warn);
+}
+
+.modal-content.success {
+  border-top: 3px solid var(--status-ok);
+}
+
+.modal-content.info {
+  border-top: 3px solid var(--status-info);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.modal-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-bright);
+}
+
+.modal-body {
+  font-size: 11px;
+  color: #aaa;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* 8. PROGRESS INDICATORS */
+.progress-container {
+  width: 100%;
+  height: 6px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 15px 0;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(33, 150, 243, 0.4);
+}
+
+/* 9. INTERACTIVE TOOLTIPS */
+.tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  cursor: help;
+  z-index: 10;
+  /* Ensure container has a baseline stack */
+}
+
+.tooltip-text {
+  visibility: hidden;
+  width: 240px;
+  background-color: #050505;
+  color: #ccc;
+  text-align: left;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 10px;
+  position: absolute;
+  z-index: 5000;
+  /* High z-index to stay above everything (Modals=2000) */
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: 1.5;
+  pointer-events: none;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+}
+
+.tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #333 transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(-5px);
+}
+
+/* Tooltip Downward Orientation */
+.tooltip-container.down .tooltip-text {
+  bottom: auto;
+  top: 125%;
+}
+
+.tooltip-container.down .tooltip-text::after {
+  top: auto;
+  bottom: 100%;
+  border-color: transparent transparent #333 transparent;
+}
+
+.tooltip-container.down:hover .tooltip-text {
+  transform: translateX(-50%) translateY(5px);
+}
+
+/* Tooltip Left Orientation (for right-edge elements) */
+.tooltip-container.left .tooltip-text {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+.tooltip-container.left .tooltip-text::after {
+  left: auto;
+  right: 10px;
+  margin-left: 0;
+}
+
+.tooltip-container.left:hover .tooltip-text {
+  transform: translateY(-5px);
+}
+
+/* Tooltip Right Orientation (for left-edge elements) */
+.tooltip-container.right .tooltip-text {
+  left: 0;
+  transform: translateX(0);
+}
+
+.tooltip-container.right .tooltip-text::after {
+  left: 10px;
+  transform: translateX(0);
+}
+
+.tooltip-container.right:hover .tooltip-text {
+  transform: translateY(-5px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 10. CONNECT SPLASH */
+.connect-splash {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #111 0%, #000 100%);
+  color: #fff;
+  text-align: center;
+}
+
+.splash-content {
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.splash-logo img {
+  width: 64px;
+  height: 64px;
+  filter: grayscale(1) brightness(0.8);
+  margin-bottom: 20px;
+}
+
+.splash-title {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  margin: 0;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.splash-subtitle {
+  font-size: 10px;
+  color: #666;
+  letter-spacing: 0.4em;
+  margin-bottom: 40px;
+}
+
+.splash-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin-bottom: 30px;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--status-warn);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+.splash-status span {
+  font-family: var(--font-data);
+  font-size: 9px;
+  color: #888;
+}
+
+.splash-guide {
+  text-align: left;
+  border-left: 2px solid #222;
+  padding-left: 20px;
+}
+
+.splash-guide p {
+  margin: 6px 0;
+  font-size: 10px;
+  color: #444;
+  font-family: var(--font-data);
+}
+
+/* 11. SIZE ENFORCEMENT OVERLAY */
+.size-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  text-align: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.size-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+  max-width: 620px;
+  padding: 60px 40px;
+  border: 1px solid #333;
+  background: #050505;
+  border-radius: 4px;
+  box-shadow: 0 0 100px rgba(0, 0, 0, 0.8);
+}
+
+.size-content h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+  white-space: nowrap;
+}

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Antigravity GCS (Dev)
+Comment=Launch Drone Configurator (Industrial)
+Exec=bash /home/spawar/Desktop/configurator/scripts/dev.sh
+Icon=utilities-terminal
+Terminal=true
+Type=Application
+Categories=Development;
+Actions=Launch;

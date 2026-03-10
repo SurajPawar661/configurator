@@ -1,0 +1,2 @@
+src/components/AdvancedConfigTab.tsx(9,5): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/components/AdvancedConfigTab.tsx(10,5): error TS6133: 'Save' is declared but its value is never read.
