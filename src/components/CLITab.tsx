@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-    Terminal,
     Trash2,
     Download,
     HelpCircle,

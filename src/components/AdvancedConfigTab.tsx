@@ -78,7 +78,7 @@ export const AdvancedConfigTab = () => {
 
     // Setup connectivity listeners
     useEffect(() => {
-        const unlisten = listen('telemetry_update', (event: any) => {
+        const unlisten = listen('telemetry_update', (_event) => {
             setIsConnected(true);
             setHwInfo({
                 mcu: 'STM32F405VG',
@@ -89,7 +89,7 @@ export const AdvancedConfigTab = () => {
         return () => { unlisten.then(f => f()); };
     }, []);
 
-    const handleUartToggle = (id: string, field: any) => {
+    const handleUartToggle = (id: string, field: keyof Omit<UARTRowProps, 'id' | 'onToggle'>) => {
         setUartPorts(prev => prev.map(p => {
             if (p.id === id) {
                 // Safety check: Don't allow disabling MSP on USB_VCP
