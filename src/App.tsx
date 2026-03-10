@@ -251,7 +251,7 @@ function App() {
   // Update & Error State
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'downloading'>('idle');
   const [hasUpdate, setHasUpdate] = useState<any>(null);
-  const { showModal, updateProgress } = useModal();
+  const { showModal, hideModal, updateProgress } = useModal();
 
   // UI state
   const [diagWidth, setDiagWidth] = useState<number>(() => {
@@ -334,7 +334,46 @@ function App() {
   useEffect(() => {
     // Only check automatically if 24h has passed (handled inside checkForUpdates)
     checkForUpdates(true);
+
+    // First-run Welcome Screen
+    const hasBeenWelcomed = localStorage.getItem('vector_welcome_shown');
+    if (!hasBeenWelcomed) {
+      showWelcomeModal();
+    }
   }, []);
+
+  const showWelcomeModal = () => {
+    showModal({
+      title: "MISSION_CONTROL_INITIALIZED",
+      message: "Welcome to Vector Configurator. You are now operating a professional-grade ground control station engineered for mission-critical drone deployments.",
+      type: 'update', // Reuse the branded 'proudly indian' layout
+      updateInfo: (
+        <div className="welcome-info-card">
+          <div style={{ marginBottom: '15px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+            <span style={{ color: 'var(--accent-glow)', fontWeight: 800 }}>VERSION: 0.1.9 (STABLE)</span>
+          </div>
+          <ul style={{ textAlign: 'left', margin: '10px 0' }}>
+            <li><strong>TELEMETRY_SYNC:</strong> High-frequency MSP bridge active.</li>
+            <li><strong>INTERFACE_LOCK:</strong> Full-screen mission awareness enforced.</li>
+            <li><strong>SAFETY_PROTOCOL:</strong> Automated update checks enabled.</li>
+          </ul>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: '15px', fontStyle: 'italic' }}>
+            "Empowering the next generation of Indian drone engineering."
+          </p>
+          <button
+            className="btn-ui primary"
+            style={{ width: '100%', marginTop: '20px' }}
+            onClick={() => {
+              localStorage.setItem('vector_welcome_shown', 'true');
+              hideModal();
+            }}
+          >
+            COMMENCE_MISSION
+          </button>
+        </div>
+      )
+    });
+  };
 
   const handleUpdate = async (update: any) => {
     setUpdateStatus('downloading');
