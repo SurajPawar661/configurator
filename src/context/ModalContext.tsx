@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-type ModalType = 'info' | 'error' | 'success' | 'warning' | 'progress';
+type ModalType = 'info' | 'error' | 'success' | 'warning' | 'progress' | 'update';
 
 interface ModalOptions {
     title: string;
@@ -11,6 +11,7 @@ interface ModalOptions {
     showCancel?: boolean;
     cancelText?: string;
     progress?: number; // 0 to 100
+    updateInfo?: ReactNode;
 }
 
 interface ModalContextType {
@@ -53,7 +54,7 @@ export const useModal = () => {
 };
 
 // Internal Modal View Component
-import { AlertCircle, CheckCircle2, Info, AlertTriangle, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, AlertTriangle, X, Sparkles } from 'lucide-react';
 
 const ModalView: React.FC<{ options: ModalOptions; onHide: () => void }> = ({ options, onHide }) => {
     const { title, message, type = 'info', confirmText = 'OK', onConfirm, showCancel, cancelText = 'CANCEL', progress } = options;
@@ -64,6 +65,7 @@ const ModalView: React.FC<{ options: ModalOptions; onHide: () => void }> = ({ op
         success: CheckCircle2,
         warning: AlertTriangle,
         progress: Info,
+        update: Sparkles,
     }[type];
 
     const IconColor = {
@@ -72,25 +74,37 @@ const ModalView: React.FC<{ options: ModalOptions; onHide: () => void }> = ({ op
         success: 'var(--status-ok)',
         warning: 'var(--status-warn)',
         progress: 'var(--accent)',
+        update: '#FF9933',
     }[type];
 
     return (
-        <div className="modal-overlay" onClick={type !== 'progress' ? onHide : undefined}>
+        <div className="modal-overlay" onClick={(type !== 'progress' && type !== 'update') ? onHide : undefined}>
             <div className={`modal-content ${type}`} onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <Icon size={20} color={IconColor} />
                     <div className="modal-title">{title}</div>
-                    {type !== 'progress' && (
+                    {(type !== 'progress' && type !== 'update') && (
                         <button className="btn-ui" style={{ marginLeft: 'auto', padding: '4px' }} onClick={onHide}>
                             <X size={14} />
                         </button>
                     )}
                 </div>
                 <div className="modal-body">
+                    {type === 'update' && (
+                        <div className="proudly-indian-container">
+                            <div className="proudly-indian-text">PROUDLY INDIAN</div>
+                        </div>
+                    )}
                     {message}
-                    {type === 'progress' && progress !== undefined && (
+                    {(type === 'progress' || type === 'update') && progress !== undefined && (
                         <div className="progress-container">
                             <div className="progress-bar" style={{ width: `${progress}%` }} />
+                            {type === 'update' && <span className="download-status-text">DOWNLOADING_SYSTEM_RESOURCES... {progress}%</span>}
+                        </div>
+                    )}
+                    {type === 'update' && options.updateInfo && (
+                        <div className="update-info-card">
+                            {options.updateInfo}
                         </div>
                     )}
                 </div>
@@ -100,7 +114,7 @@ const ModalView: React.FC<{ options: ModalOptions; onHide: () => void }> = ({ op
                             {cancelText}
                         </button>
                     )}
-                    {type !== 'progress' && (
+                    {type !== 'progress' && type !== 'update' && (
                         <button
                             className={`btn-ui ${type === 'error' ? 'err' : 'primary'}`}
                             onClick={() => {

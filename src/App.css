@@ -792,3 +792,69 @@ select.input-ui {
   line-height: 1.2;
   white-space: nowrap;
 }
+
+/* 12. PROUDLY INDIAN UPDATE EXPERIENCE */
+.proudly-indian-text {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  text-align: center;
+  margin-bottom: 30px;
+  background: linear-gradient(to right, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: tricolor-glow 3s infinite linear;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+}
+
+@keyframes tricolor-glow {
+  0% {
+    filter: drop-shadow(0 0 5px rgba(255, 153, 51, 0.3));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
+  }
+
+  100% {
+    filter: drop-shadow(0 0 5px rgba(19, 136, 8, 0.3));
+  }
+}
+
+.update-info-card {
+  background: #050505;
+  border: 1px solid #222;
+  padding: 15px;
+  border-radius: 4px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.update-info-card h4 {
+  margin: 0 0 10px 0;
+  font-size: 11px;
+  color: var(--status-info);
+  letter-spacing: 0.1em;
+}
+
+.update-info-card ul {
+  margin: 0;
+  padding-left: 15px;
+  font-family: var(--font-data);
+  font-size: 9px;
+  color: #777;
+}
+
+.update-info-card li {
+  margin-bottom: 4px;
+}
+
+.download-status-text {
+  font-family: var(--font-data);
+  font-size: 9px;
+  color: #555;
+  text-transform: uppercase;
+  margin-top: 8px;
+  display: block;
+}

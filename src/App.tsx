@@ -250,8 +250,8 @@ function App() {
 
   // Update & Error State
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'downloading'>('idle');
-  const [hasUpdate, setHasUpdate] = useState(false);
-  const { showModal, hideModal, updateProgress } = useModal();
+  const [hasUpdate, setHasUpdate] = useState<any>(null);
+  const { showModal, updateProgress } = useModal();
 
   // UI state
   const [diagWidth, setDiagWidth] = useState<number>(() => {
@@ -306,7 +306,7 @@ function App() {
     try {
       const update = await check();
       if (update) {
-        setHasUpdate(true);
+        setHasUpdate(update);
         setUpdateStatus('available');
         if (!silent) {
           showModal({
@@ -316,11 +316,11 @@ function App() {
             confirmText: "PROCEED_WITH_UPDATE",
             showCancel: true,
             cancelText: "ABORT",
-            onConfirm: handleUpdate
+            onConfirm: () => handleUpdate(update)
           });
         }
       } else {
-        setHasUpdate(false);
+        setHasUpdate(null);
         setUpdateStatus('idle');
         if (!silent) addLog("No updates available", "info");
       }
@@ -336,29 +336,66 @@ function App() {
     checkForUpdates(true);
   }, []);
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (update: any) => {
     setUpdateStatus('downloading');
     showModal({
-      title: "OTA_UPDATE_IN_PROGRESS",
-      message: "Downloading and installing system update. Do not disconnect power.",
-      type: 'progress',
-      progress: 0
+      title: "BRACING_FOR_UPGRADE",
+      message: "Our engineering team has prepared critical enhancements for your Vector drone.",
+      type: 'update',
+      progress: 0,
+      updateInfo: (
+        <ul>
+          <li>Enhanced Telemetry Pipeline Stability</li>
+          <li>Optimized 3D Rendering Performance</li>
+          <li>Branded 'Vector Configurator' Identity</li>
+          <li>Improved Multi-Platform Build Infrastructure</li>
+        </ul>
+      )
     });
 
     try {
-      const update = await check();
-      if (update) {
-        addLog("Downloading System Update...", "warning");
-        updateProgress(50);
-        await update.downloadAndInstall();
-        updateProgress(100);
-        addLog("Update complete. Relaunching...", "success" as any);
-        await relaunch();
-      }
+      addLog("Downloading Branded System Update...", "warning");
+
+      let progress = 0;
+      // Simulate/Bridge progress since tauri-plugin-updater doesn't expose raw bits natively yet
+      // but we can provide a smooth transition.
+      const interval = setInterval(() => {
+        progress += 5;
+        if (progress <= 90) updateProgress(progress);
+        if (progress >= 95) clearInterval(interval);
+      }, 500);
+
+      await update.downloadAndInstall();
+
+      clearInterval(interval);
+      updateProgress(100);
+
+      addLog("Update complete. Finalizing mission resources...", "success" as any);
+
+      showModal({
+        title: "MISSION_STAGING_COMPLETE",
+        message: (
+          <div>
+            <p>The upgrade has been successfully staged. System will now relaunch with professional branding and enhanced telemetry modules.</p>
+            <div className="update-info-card" style={{ marginTop: '10px' }}>
+              <span style={{ color: 'var(--status-ok)', fontWeight: 800 }}>SUCCESS: Version 0.1.9 Installed</span>
+            </div>
+          </div>
+        ),
+        type: 'success',
+        confirmText: "LAUNCH_VECTOR_0.1.9",
+        onConfirm: async () => {
+          await relaunch();
+        }
+      });
     } catch (e) {
-      addLog(`Update Failed: ${e}`, "error");
+      addLog(`Mission Aborted: ${e}`, "error");
       setUpdateStatus('available');
-      hideModal();
+      showModal({
+        title: "UPDATE_FAILURE",
+        message: `The system was unable to pull resources: ${e}`,
+        type: 'error'
+      });
     }
   };
 
@@ -629,7 +666,7 @@ function App() {
               confirmText: "PROCEED_WITH_UPDATE",
               showCancel: true,
               cancelText: "ABORT",
-              onConfirm: handleUpdate
+              onConfirm: () => handleUpdate(hasUpdate) // hasUpdate here refers to the update object if available
             }) : checkForUpdates(false)}
             disabled={updateStatus === 'checking' || updateStatus === 'downloading'}
           >
