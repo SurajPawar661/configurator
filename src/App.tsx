@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
 import { check } from "@tauri-apps/plugin-updater";
-import { relaunch } from "@tauri-apps/plugin-process";
+
 
 // Components
 import { Drone3D } from "./components/Drone3D";
@@ -430,7 +430,11 @@ function App() {
             <li style={{ marginBottom: '10px' }}>✓ BRAVO: Standardized Backend Naming</li>
           </ul>
         </div>
-      )
+      ),
+      onConfirm: async () => {
+        const { relaunch } = await import("@tauri-apps/plugin-process");
+        await relaunch();
+      }
     });
   };
 
