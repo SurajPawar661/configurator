@@ -12,6 +12,10 @@ interface ModalOptions {
     cancelText?: string;
     progress?: number; // 0 to 100
     updateInfo?: ReactNode;
+    fullScreen?: boolean;
+    onNext?: () => void;
+    currentStep?: number;
+    totalSteps?: number;
 }
 
 interface ModalContextType {
@@ -57,7 +61,11 @@ export const useModal = () => {
 import { AlertCircle, CheckCircle2, Info, AlertTriangle, X, Sparkles } from 'lucide-react';
 
 const ModalView: React.FC<{ options: ModalOptions; onHide: () => void }> = ({ options, onHide }) => {
-    const { title, message, type = 'info', confirmText = 'OK', onConfirm, showCancel, cancelText = 'CANCEL', progress } = options;
+    const {
+        title, message, type = 'info', confirmText = 'OK', onConfirm,
+        showCancel, cancelText = 'CANCEL', progress, fullScreen,
+        onNext, currentStep, totalSteps
+    } = options;
 
     const Icon = {
         info: Info,
@@ -76,6 +84,48 @@ const ModalView: React.FC<{ options: ModalOptions; onHide: () => void }> = ({ op
         progress: 'var(--accent)',
         update: '#FF9933',
     }[type];
+
+    if (fullScreen) {
+        return (
+            <div className="fullscreen-overlay">
+                <div className="fullscreen-content-col">
+                    <div className="fullscreen-header">
+                        <div className="brand-badge">VECTOR_SYSTEMS_v0.2.0</div>
+                        <div className="step-indicator">STEP_{currentStep}_OF_{totalSteps}</div>
+                    </div>
+
+                    <div className="fullscreen-body">
+                        <h1 className="hero-title">{title}</h1>
+                        <div className="hero-description">{message}</div>
+                        {options.updateInfo}
+                    </div>
+
+                    <div className="fullscreen-footer">
+                        {showCancel && (
+                            <button className="btn-ui" onClick={onHide}>
+                                {cancelText}
+                            </button>
+                        )}
+                        <button
+                            className="btn-ui primary large"
+                            onClick={onNext || onConfirm || onHide}
+                        >
+                            {currentStep === totalSteps ? (confirmText || "COMMENCE_MISSION") : "PROCEED_TO_NEXT_STEP"}
+                        </button>
+                    </div>
+                </div>
+                <div className="fullscreen-visual-col">
+                    <div className="visual-atmosphere">
+                        <div className="tricolor-bloom-saffron" />
+                        <div className="tricolor-bloom-white" />
+                        <div className="tricolor-bloom-green" />
+                    </div>
+                    <div className="hero-v-logo">V</div>
+                    <div className="origin-label">ENGINEERED_IN_INDIA</div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="modal-overlay" onClick={(type !== 'progress' && type !== 'update') ? onHide : undefined}>

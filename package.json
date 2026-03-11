@@ -2,7 +2,7 @@
   "name": "vector-configurator",
   "description": "Professional Ground Control Station for Vector Drones",
   "private": true,
-  "version": "0.1.9",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

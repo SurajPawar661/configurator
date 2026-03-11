@@ -250,6 +250,7 @@ function App() {
 
   // Update & Error State
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'downloading'>('idle');
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [hasUpdate, setHasUpdate] = useState<any>(null);
   const { showModal, hideModal, updateProgress } = useModal();
 
@@ -290,86 +291,144 @@ function App() {
   }, [showModal]);
 
   // Update Checker
-  const checkForUpdates = async (silent = true) => {
-    // Once-a-day check logic using localStorage
-    if (silent) {
-      const lastCheck = localStorage.getItem('vector_gcs_last_update_check');
-      const now = Date.now();
-      if (lastCheck && now - parseInt(lastCheck, 10) < 24 * 60 * 60 * 1000) {
-        console.log("Update check skipped (last checked < 24h ago)");
-        return;
-      }
-      localStorage.setItem('vector_gcs_last_update_check', now.toString());
-    }
+  const checkForUpdates = async (isManual = false) => {
+    if (isCheckingUpdate) return;
 
-    if (!silent) setUpdateStatus('checking');
     try {
+      setIsCheckingUpdate(true);
+      if (isManual) setUpdateStatus('checking');
+
       const update = await check();
       if (update) {
         setHasUpdate(update);
         setUpdateStatus('available');
-        if (!silent) {
+        // Trigger the branded update modal
+        showUpdateModal(update);
+      } else {
+        if (isManual) {
           showModal({
-            title: "OTA_SYSTEM_UPDATE",
-            message: "A new version of Vector GCS is available. This update includes stability improvements and critical logic patches.",
-            type: 'info',
-            confirmText: "PROCEED_WITH_UPDATE",
-            showCancel: true,
-            cancelText: "ABORT",
-            onConfirm: () => handleUpdate(update)
+            title: "SYSTEM_UP_TO_DATE",
+            message: "Your Ground Control Station is running the latest stable firmware (v0.2.0).",
+            type: 'success'
           });
         }
-      } else {
-        setHasUpdate(null);
-        setUpdateStatus('idle');
-        if (!silent) addLog("No updates available", "info");
       }
     } catch (e) {
-      console.error(e);
-      setUpdateStatus('idle');
-      if (!silent) addLog(`Update check failed: ${e}`, "error");
+      console.error("UPDATE_CHECK_FAILED", e);
+    } finally {
+      setIsCheckingUpdate(false);
+      if (isManual) setUpdateStatus('idle');
     }
   };
 
   useEffect(() => {
-    // Only check automatically if 24h has passed (handled inside checkForUpdates)
-    checkForUpdates(true);
+    // Initial check
+    checkForUpdates(false);
 
-    // First-run Welcome Screen
-    const hasBeenWelcomed = localStorage.getItem('vector_welcome_shown');
-    if (!hasBeenWelcomed) {
+    // High-Frequency Check (15 Minutes)
+    const interval = setInterval(() => {
+      // Only auto-check if we aren't already connected to a drone (safety)
+      if (!isConnected) {
+        console.log("CRON::STARTING_15_MIN_UPDATE_HANDSHAKE");
+        checkForUpdates(false);
+      }
+    }, 900000);
+
+    // First-run Welcome Screen (v0.2.0)
+    const lastWelcomedVersion = localStorage.getItem('vector_welcome_version');
+    if (lastWelcomedVersion !== '0.2.0') {
       showWelcomeModal();
     }
-  }, []);
 
-  const showWelcomeModal = () => {
-    showModal({
-      title: "MISSION_CONTROL_INITIALIZED",
-      message: "Welcome to Vector Configurator. You are now operating a professional-grade ground control station engineered for mission-critical drone deployments.",
-      type: 'update', // Reuse the branded 'proudly indian' layout
-      updateInfo: (
-        <div className="welcome-info-card">
-          <div style={{ marginBottom: '15px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-            <span style={{ color: 'var(--accent-glow)', fontWeight: 800 }}>VERSION: 0.1.9 (STABLE)</span>
+    return () => clearInterval(interval);
+  }, [isConnected]);
+
+  const showWelcomeModal = (step = 1) => {
+    const steps = [
+      {
+        title: "MISSION_CONTROL_INITIALIZED",
+        message: "Welcome to Vector v0.2.0. You are operating a professional-grade ground control station engineered for mission-critical drone deployments and telemetry optimization.",
+        updateInfo: (
+          <div className="welcome-info-card v2">
+            <p style={{ color: '#888' }}>Vector has been reimagined as a high-fidelity cockpit, prioritizing situational awareness and engineering precision.</p>
           </div>
-          <ul style={{ textAlign: 'left', margin: '10px 0' }}>
-            <li><strong>TELEMETRY_SYNC:</strong> High-frequency MSP bridge active.</li>
-            <li><strong>INTERFACE_LOCK:</strong> Full-screen mission awareness enforced.</li>
-            <li><strong>SAFETY_PROTOCOL:</strong> Automated update checks enabled.</li>
+        )
+      },
+      {
+        title: "ENGINEERING_OPERATIONS",
+        message: "High-frequency telemetry pipelines and real-time PID dynamics analysis are now standard. All systems are synchronized to 8.0kHz core loops.",
+        updateInfo: (
+          <div className="welcome-info-card v2">
+            <ul style={{ textAlign: 'left', listStyle: 'none', padding: 0, fontSize: '12px' }}>
+              <li style={{ marginBottom: '8px' }}><strong>[01]</strong> SILENT_CRON Update Engine (15 min interval)</li>
+              <li style={{ marginBottom: '8px' }}><strong>[02]</strong> VECTOR_STEALTH Visual Architecture</li>
+              <li style={{ marginBottom: '8px' }}><strong>[03]</strong> MULTISHOT_PRO Protocol Bridging</li>
+            </ul>
+          </div>
+        )
+      },
+      {
+        title: "READY_FOR_DEPLOYMENT",
+        message: "Your GCS is fully calibrated. Auto-update handshakes are active. Prepare for immediate mission start.",
+        confirmText: "COMMENCE_MISSION"
+      }
+    ];
+
+    const current = steps[step - 1];
+    showModal({
+      title: current.title,
+      message: current.message,
+      type: 'update',
+      fullScreen: true,
+      currentStep: step,
+      totalSteps: steps.length,
+      updateInfo: current.updateInfo,
+      confirmText: current.confirmText,
+      onNext: step < steps.length ? () => showWelcomeModal(step + 1) : undefined,
+      onConfirm: () => {
+        localStorage.setItem('vector_welcome_version', '0.2.0');
+        hideModal();
+      }
+    });
+  };
+
+  const showUpdateModal = (update: any) => {
+    showModal({
+      title: "OTA_SYSTEM_UPDATE_AVAILABLE",
+      message: `A new system patch (${update.version}) is ready for extraction. This update includes critical stability patches and interface optimizations.`,
+      type: 'update',
+      showCancel: true,
+      cancelText: "ABORT",
+      confirmText: "PROCEED_WITH_UPDATE",
+      onConfirm: () => handleUpdate(update),
+      updateInfo: (
+        <div className="welcome-info-card v2">
+          <p style={{ fontSize: '11px', color: '#666', borderBottom: '1px solid #222', paddingBottom: '8px' }}>SOURCE: GITHUB_OTA_BRIDGE</p>
+          <div style={{ marginTop: '10px', fontSize: '12px', color: 'var(--status-info)' }}>
+            NEW: Branded Full-Screen Onboarding Journey
+          </div>
+        </div>
+      )
+    });
+  };
+
+  const showUpdateSuccessModal = () => {
+    showModal({
+      title: "SYSTEM_0.2.0_DEPLOYED",
+      message: "The transition to v0.2.0 is complete. Your Ground Control Station has been successfully upgraded with the 'Mission Control' interface package.",
+      type: 'success',
+      fullScreen: true,
+      currentStep: 1,
+      totalSteps: 1,
+      confirmText: "RESUME_MISSION",
+      updateInfo: (
+        <div className="welcome-info-card v2">
+          <div style={{ marginBottom: '15px', color: 'var(--status-ok)', fontWeight: 800 }}>INTELLIGENCE_REPORT:</div>
+          <ul style={{ textAlign: 'left', listStyle: 'none', padding: 0, fontSize: '13px' }}>
+            <li style={{ marginBottom: '10px' }}>✓ MAJOR: Full-Screen Branded Overlays</li>
+            <li style={{ marginBottom: '10px' }}>✓ ENGINE: 15-Minute Safe Update Polling</li>
+            <li style={{ marginBottom: '10px' }}>✓ BRAVO: Standardized Backend Naming</li>
           </ul>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: '15px', fontStyle: 'italic' }}>
-            "Empowering the next generation of Indian drone engineering."
-          </p>
-          <button
-            className="btn-ui primary"
-            style={{ width: '100%', marginTop: '20px' }}
-            onClick={() => {
-              localStorage.setItem('vector_welcome_shown', 'true');
-              hideModal();
-            }}
-          >
-            COMMENCE_MISSION
-          </button>
         </div>
       )
     });
@@ -409,24 +468,9 @@ function App() {
       clearInterval(interval);
       updateProgress(100);
 
-      addLog("Update complete. Finalizing mission resources...", "success" as any);
+      addLog("System Update Successfully Installed. Preparing Intelligence Report...", "info");
 
-      showModal({
-        title: "MISSION_STAGING_COMPLETE",
-        message: (
-          <div>
-            <p>The upgrade has been successfully staged. System will now relaunch with professional branding and enhanced telemetry modules.</p>
-            <div className="update-info-card" style={{ marginTop: '10px' }}>
-              <span style={{ color: 'var(--status-ok)', fontWeight: 800 }}>SUCCESS: Version 0.1.9 Installed</span>
-            </div>
-          </div>
-        ),
-        type: 'success',
-        confirmText: "LAUNCH_VECTOR_0.1.9",
-        onConfirm: async () => {
-          await relaunch();
-        }
-      });
+      showUpdateSuccessModal();
     } catch (e) {
       addLog(`Mission Aborted: ${e}`, "error");
       setUpdateStatus('available');
